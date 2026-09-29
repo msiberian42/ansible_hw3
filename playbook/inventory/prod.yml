@@ -1,0 +1,13 @@
+---
+clickhouse:
+  hosts:
+    clickhouse-01:
+      ansible_host: 51.250.12.14
+      ansible_user: pavel
+      ansible_python_interpreter: /usr/bin/python3
+vector:
+  hosts:
+    clickhouse-01:
+      ansible_host: 51.250.12.14
+      ansible_user: pavel
+      ansible_python_interpreter: /usr/bin/python3
