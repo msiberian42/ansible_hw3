@@ -1,0 +1,5 @@
+---
+lighthouse_version: "master"
+lighthouse_install_dir: "/var/www/lighthouse"
+lighthouse_archive: "/tmp/lighthouse.tar.gz"
+lighthouse_repo: "https://github.com/VKCOM/lighthouse/archive/refs/heads/master.tar.gz"

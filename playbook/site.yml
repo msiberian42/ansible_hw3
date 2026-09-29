@@ -104,3 +104,82 @@
         dest: "/etc/systemd/system/vector.service"
         mode: "0644"
       notify: Restart vector
+
+- name: Install LightHouse
+  hosts: lighthouse
+  become: true
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
+        enabled: true
+        daemon_reload: true
+
+  tasks:
+    - name: Install nginx
+      ansible.builtin.dnf:
+        name: nginx
+        state: present
+
+    - name: Download LightHouse
+      ansible.builtin.get_url:
+        url: "{{ lighthouse_repo }}"
+        dest: "{{ lighthouse_archive }}"
+        mode: "0644"
+
+    - name: Install SELinux utilities
+      ansible.builtin.dnf:
+        name: policycoreutils-python-utils
+        state: present
+
+    - name: Set SELinux context for LightHouse
+      community.general.sefcontext:
+        target: "{{ lighthouse_install_dir }}(/.*)?"
+        setype: httpd_sys_content_t
+        state: present
+
+    - name: Restore SELinux context
+      ansible.builtin.command:
+        cmd: "restorecon -Rv {{ lighthouse_install_dir }}"
+      register: restorecon_result
+      changed_when: "'restorecon reset' in restorecon_result.stdout"
+
+
+    - name: Create LightHouse directory
+      ansible.builtin.file:
+        path: "{{ lighthouse_install_dir }}"
+        state: directory
+        owner: nginx
+        group: nginx
+        mode: "0755"
+
+    - name: Unarchive LightHouse
+      ansible.builtin.unarchive:
+        src: "{{ lighthouse_archive }}"
+        dest: "/tmp"
+        remote_src: true
+
+    - name: Copy LightHouse files
+      ansible.builtin.copy:
+        src: "/tmp/lighthouse-master/"
+        dest: "{{ lighthouse_install_dir }}/"
+        remote_src: true
+        owner: nginx
+        group: nginx
+        mode: "0755"
+      notify: Restart nginx
+
+    - name: Deploy nginx configuration
+      ansible.builtin.template:
+        src: "lighthouse.conf.j2"
+        dest: "/etc/nginx/conf.d/lighthouse.conf"
+        mode: "0644"
+      notify: Restart nginx
+
+    - name: Start nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: started
+        enabled: true
